@@ -1,0 +1,5 @@
+{
+  "name": "chat_npc",
+  "description": "構造化主観性ダイナミクス（SSD）の原則に基づいて性格が形成されるAI NPCとの対話型チャットです。",
+  "requestFramePermissions": []
+}
