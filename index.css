@@ -83,7 +83,7 @@ header h1 {
 
 .settings-panel textarea {
   width: 100%;
-  height: 200px; /* Adjusted height */
+  height: 150px; /* Adjusted height */
   flex-shrink: 0;
   background-color: var(--secondary-color);
   border: 1px solid #4a4a4a;
@@ -208,6 +208,43 @@ header h1 {
   background-color: #5945bd;
 }
 
+/* Thought Process Panel */
+.thought-process-panel {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  border: 1px solid var(--secondary-color);
+}
+
+.thought-process-panel h3 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.parameter-updates-container {
+  display: flex;
+  justify-content: space-around;
+  background-color: var(--secondary-color);
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.parameter-update-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.parameter-update-item span:first-child {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
 /* Internal State Panel */
 .internal-state-panel {
   margin-top: 1.5rem;
@@ -248,8 +285,49 @@ header h1 {
   border-radius: 6px;
 }
 
+.numerical-parameters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.progress-bar-item .progress-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.progress-bar-item label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.progress-bar-item span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: var(--secondary-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-in-out;
+}
+
 .state-reasoning {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   padding: 0.75rem 1rem;
   background-color: rgba(0,0,0,0.15);
   border-left: 3px solid var(--primary-color);
