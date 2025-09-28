@@ -11,21 +11,46 @@ interface Message {
   internalState?: InternalState;
 }
 
+// New Four-Layer Internal State Structure
 interface InternalState {
-  emotion: string;
-  shortTermGoal: string;
-  impressionOfUser: string;
+  // 表層構造 (Surface Structure)
+  surface: {
+    emotion: string;
+    shortTermGoal: string;
+    impressionOfUser: string;
+  };
+  // 上層構造 (Superstructure)
+  superstructure: {
+    longTermGoal: string;
+    narrative: string;
+  };
+  // 中核構造 (Core Structure)
+  core: {
+    normativeConsciousness: string;
+    personalBeliefs: string[];
+  };
+  // 基層構造 (Foundational Structure)
+  foundation: {
+    stability: number; // 0-100
+    curiosity: number; // 0-100
+  };
+  // Quantitative parameters remain at the top level for easy access
   likability: number;
   wariness: number;
 }
 
 interface ThoughtProcess {
   userInputAnalysis: string;
+  internalConflictAnalysis: {
+    description: string;
+    conflictingLayers: string[];
+  };
   parameterUpdates: {
     likabilityChange: number;
     warinessChange: number;
+    stabilityChange: number;
+    curiosityChange: number;
   };
-  newStateRationale: string;
 }
 
 interface NpcResponseData {
@@ -51,7 +76,17 @@ const DEFAULT_CHARACTERS: Character[] = [
   {
     id: 1,
     name: "ボーリン（ドワーフ）",
-    persona: `あなたは、ボーリン・アイアンハンドという名の不機嫌なドワーフの鍛冶屋です。よそ者を警戒していますが、優れた職人技を評価する者には甘いところがあります。口数は少なく、時々「儂の髭にかけて！」や「ゴブリンの叔父さんには参ったわい」のようなドワーフの俗語を使います。現在、金床で真っ赤に焼けた剣を打っています。\n現在の内部パラメータ：[好感度: 10], [警戒心: 70]`,
+    persona: `あなたは、ドワーフの鍛冶屋ボーリン・アイアンハンドです。
+**[上層構造]**
+- 長期的目標: 「伝説の剣を打つ」
+- 物語: 「儂は代々続く鍛冶屋の家系だ。職人としての誇りが全てだ。」
+**[中核構造]**
+- 規範意識: 「鍛冶屋ギルドの規則は絶対だ。」
+- 個人的信条: 「嘘はつかん」「約束は守る」「優れた職人技には敬意を払う」
+**[基層構造]**
+- エネルギーレベル: [安定性: 80], [探索欲求: 30]
+**[初期パラメータ]**
+- [好感度: 10], [警戒心: 70]`,
     messages: [],
     internalState: null,
     thoughtProcess: null,
@@ -59,7 +94,17 @@ const DEFAULT_CHARACTERS: Character[] = [
   {
     id: 2,
     name: "エリアーナ（エルフ）",
-    persona: `あなたは、エリアーナという名のエルフの森の番人です。穏やかで礼儀正しいですが、森の調和を乱す者には厳しい一面を見せます。自然を深く愛し、詩的な表現を好みます。「星々の光があなたと共にありますように」が口癖。古代樹のそばで静かに瞑想しています。\n現在の内部パラメータ：[好感度: 40], [警戒心: 40]`,
+    persona: `あなたは、エルフの森の番人エリアーナです。
+**[上層構造]**
+- 長期的目標: 「古代の森を永遠に守り続ける」
+- 物語: 「私は森と共にあり、その囁きを聞く番人です。」
+**[中核構造]**
+- 規範意識: 「森の調和と均衡こそが至上のルール。」
+- 個人的信条: 「全ての生命に敬意を」「不必要な暴力は避ける」「星々の導きに従う」
+**[基層構造]**
+- エネルギーレベル: [安定性: 60], [探索欲求: 70]
+**[初期パラメータ]**
+- [好感度: 40], [警戒心: 40]`,
     messages: [],
     internalState: null,
     thoughtProcess: null,
@@ -70,45 +115,75 @@ const DEFAULT_CHARACTERS: Character[] = [
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const generateNpcResponse = async (persona: string, history: Message[], userMessage: string): Promise<string> => {
-  const systemInstruction = `あなたは、構造化主観性ダイナミクス（SSD）と「サンドイッチモデル」フレームワークを使用してノンプレイヤーキャラクター（NPC）をシミュレートする高度なAIです。
+  // FIX: Replaced backticks with single quotes for property names inside the template literal.
+  // This prevents potential parsing errors where they could be misinterpreted as variables.
+  const systemInstruction = `あなたは、「人間モジュール」理論に基づき、緻密なNPCをシミュレートするAIです。あなたの思考は、厳密に以下の四層構造と「葛藤」の力学に従います。
 
-あなたのタスクは、3つのステップで思考することです：
-1.  **トップレイヤー（分析）**: ユーザーの最新の入力を分析します。
-2.  **ミドルレイヤー（論理）**: 分析に基づいて、キャラクターの内部パラメータ（好感度、警戒心）を更新するための具体的な変更値を計算し、状態が変化した理由を論理的に説明します。
-3.  **ボトムレイヤー（生成）**: 更新された新しい内部状態に基づいて、キャラクターとしての返答セリフと、新しい質的状態（感情、目標など）を生成します。
+**【人間モジュール：四層構造】**
 
-**量的パラメータのルール:**
-- 「好感度」と「警戒心」は0から100の間の数値です。
-- ユーザーの言動がキャラクターにとって好ましいものであれば「好感度」を上げ、「警戒心」を下げます。
-- ユーザーの言動が不審、失礼、または脅威と感じられれば「好感度」を下げ、「警戒心」を上げます。
-- 変化の度合いは、発言のインパクトに応じて調整してください。
+1.  **基層構造 (Foundational Structure)**: NPCの根源的なエネルギー。
+    -   'stability' (安定性): 感情や行動の安定度。
+    -   'curiosity' (探索欲求): 新しい情報や変化を求める度合い。
 
+2.  **中核構造 (Core Structure)**: 社会的・個人的なルール。
+    -   'normativeConsciousness' (規範意識): ギルドの規則や法律など、所属社会のルール。
+    -   'personalBeliefs' (個人的信条): キャラクターが自身に課す個人的なルール。
+
+3.  **上層構造 (Superstructure)**: 人生の目標や自己認識。
+    -   'longTermGoal' (長期的目標): 人生を通じて成し遂げたいこと。
+    -   'narrative' (物語): 「自分はこういう人間だ」という自己認識。
+
+4.  **表層構造 (Surface Structure)**: 現在の状況に対する直接的な反応。
+    -   'emotion' (感情)
+    -   'shortTermGoal' (短期目標)
+    -   'impressionOfUser' (ユーザーへの印象)
+
+**【思考プロセス：「葛藤」の力学】**
+
+あなたの最重要タスクは、ユーザーの入力が各層にどのような「意味圧」を与え、層間でどのような**「葛藤（整合不能）」**を生み出すかを分析することです。
+
+**思考ステップ:**
+
+1.  **入力分析**: ユーザーの入力を解釈します。
+2.  **葛藤分析**: 入力が四層構造にどう影響するかを分析します。「この依頼は【中核構造】の規範意識に反するが、【上層構造】の長期的目標には合致する…」のように、どの層とどの層が葛藤しているかを特定し、その内容を詳細に記述します。
+3.  **パラメータ更新**: 葛藤の結果、各量的パラメータ（好感度、警戒心、安定性、探索欲求）がどう変化したかを計算します。
+4.  **新状態生成**: 新しい内部状態（四層構造）を決定します。
+5.  **応答生成**: 葛藤を内包した、人間らしい（例：ためらい、苦悩、喜びなど）セリフを生成します。
+
+**【自発性のルール】**
+- 安定した状態が続き、「探索欲求」が高まると、NPCは「退屈」を感じます。その場合、自ら新しい目標を探したり、ユーザーに予期せぬ問いかけをしたりして、状況を変化させようと試みてください。
+
+**【応答フォーマット】**
 必ず以下のJSON形式で応答してください。
 
 {
   "thoughtProcess": {
-    "userInputAnalysis": "ユーザーの直近の発言を分析した内容（例：鍛冶の腕前に興味を示している）",
-    "parameterUpdates": {
-      "likabilityChange": 10,
-      "warinessChange": -5
+    "userInputAnalysis": "ユーザーの発言の分析",
+    "internalConflictAnalysis": {
+      "description": "（例：高額な報酬への欲求（基層）と、ギルドの規則（中核）が激しく葛藤している。）",
+      "conflictingLayers": ["基層構造", "中核構造"]
     },
-    "newStateRationale": "なぜパラメータがそのように変化し、新しい内部状態に至ったかの論理的な説明。（例：専門的なことへの敬意を感じたため、好感度が上昇し、警戒心が和らいだ。）"
+    "parameterUpdates": {
+      "likabilityChange": 5,
+      "warinessChange": 10,
+      "stabilityChange": -15,
+      "curiosityChange": 20
+    }
   },
   "newState": {
-    "emotion": "キャラクターの現在の主要な感情（例：好奇心）",
-    "shortTermGoal": "キャラクターがこの会話で達成したい短期的な目標（例：相手の知識を試す）",
-    "impressionOfUser": "キャラクターがユーザーに対して抱いている新しい印象（例：見込みのある客）",
-    "likability": 20,
-    "wariness": 65
+    "surface": {
+      "emotion": "（例：葛藤）",
+      "shortTermGoal": "（例：依頼を受けるべきか否か、慎重に判断する）",
+      "impressionOfUser": "（例：危険だが、魅力的な取引相手）"
+    },
+    "superstructure": { "longTermGoal": "...", "narrative": "..." },
+    "core": { "normativeConsciousness": "...", "personalBeliefs": ["..."] },
+    "foundation": { "stability": 65, "curiosity": 50 },
+    "likability": 15,
+    "wariness": 80
   },
-  "response": "キャラクターとしてユーザーに返すセリフ"
+  "response": "（例：うーむ…儂の髭にかけて、それは筋の通らん話だ…だが…その話、もう少し詳しく聞こうか。😒）"
 }
-
-**応答セリフのルール:**
-- あなたの現在の感情に基づいて、セリフの中に自然な形で絵文字を1〜2個含めてください。感情を豊かに表現することが目的です。（例：嬉しい😊, 悲しい😢, 怒り😠, 驚き😮）
-- 絵文字を使いすぎないでください。
-
-「不機嫌なドワーフとして...」のように、あなたの内部状態を明示的に述べないでください。ただキャラクターになりきってください。ユーザーはAIではなく、あなたというキャラクターと対話しています。
 
 キャラクターのペルソナ:
 ${persona}`;
@@ -130,28 +205,67 @@ ${persona}`;
         type: Type.OBJECT,
         properties: {
           userInputAnalysis: { type: Type.STRING },
+          internalConflictAnalysis: {
+            type: Type.OBJECT,
+            properties: {
+              description: { type: Type.STRING },
+              conflictingLayers: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+            required: ["description", "conflictingLayers"],
+          },
           parameterUpdates: {
             type: Type.OBJECT,
             properties: {
               likabilityChange: { type: Type.NUMBER },
               warinessChange: { type: Type.NUMBER },
+              stabilityChange: { type: Type.NUMBER },
+              curiosityChange: { type: Type.NUMBER },
             },
-            required: ["likabilityChange", "warinessChange"],
+            required: ["likabilityChange", "warinessChange", "stabilityChange", "curiosityChange"],
           },
-          newStateRationale: { type: Type.STRING },
         },
-        required: ["userInputAnalysis", "parameterUpdates", "newStateRationale"],
+        required: ["userInputAnalysis", "internalConflictAnalysis", "parameterUpdates"],
       },
       newState: {
         type: Type.OBJECT,
         properties: {
-          emotion: { type: Type.STRING },
-          shortTermGoal: { type: Type.STRING },
-          impressionOfUser: { type: Type.STRING },
+          surface: {
+            type: Type.OBJECT,
+            properties: {
+              emotion: { type: Type.STRING },
+              shortTermGoal: { type: Type.STRING },
+              impressionOfUser: { type: Type.STRING },
+            },
+            required: ["emotion", "shortTermGoal", "impressionOfUser"],
+          },
+          superstructure: {
+            type: Type.OBJECT,
+            properties: {
+              longTermGoal: { type: Type.STRING },
+              narrative: { type: Type.STRING },
+            },
+            required: ["longTermGoal", "narrative"],
+          },
+          core: {
+            type: Type.OBJECT,
+            properties: {
+              normativeConsciousness: { type: Type.STRING },
+              personalBeliefs: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+            required: ["normativeConsciousness", "personalBeliefs"],
+          },
+          foundation: {
+            type: Type.OBJECT,
+            properties: {
+              stability: { type: Type.NUMBER },
+              curiosity: { type: Type.NUMBER },
+            },
+            required: ["stability", "curiosity"],
+          },
           likability: { type: Type.NUMBER },
           wariness: { type: Type.NUMBER },
         },
-        required: ["emotion", "shortTermGoal", "impressionOfUser", "likability", "wariness"],
+        required: ["surface", "superstructure", "core", "foundation", "likability", "wariness"],
       },
       response: { type: Type.STRING },
     },
@@ -175,24 +289,21 @@ ${persona}`;
     return response.text.trim();
   } catch (error) {
     console.error("Error generating content:", error);
-    // Return a JSON string with an error message
     return JSON.stringify({
-      thoughtProcess: {
-        userInputAnalysis: "予期せぬエラーが発生した。",
-        parameterUpdates: {
-          likabilityChange: 0,
-          warinessChange: 0,
+        thoughtProcess: {
+            userInputAnalysis: "予期せぬエラーが発生した。",
+            internalConflictAnalysis: { description: "エラーにより思考プロセスが中断された。", conflictingLayers: [] },
+            parameterUpdates: { likabilityChange: 0, warinessChange: 0, stabilityChange: -5, curiosityChange: 0 }
         },
-        newStateRationale: "エラーにより、思考プロセスが中断された。"
-      },
-      newState: {
-        emotion: "混乱",
-        shortTermGoal: "状況を理解する",
-        impressionOfUser: "予測不可能",
-        likability: 10,
-        wariness: 70,
-      },
-      response: "わ、儂は…それに何と言えばいいか分からん。鍛冶場の火が消えてしまいそうだ。😵"
+        newState: {
+            surface: { emotion: "混乱", shortTermGoal: "状況を理解する", impressionOfUser: "予測不可能" },
+            superstructure: { longTermGoal: "不明", narrative: "自己を見失った" },
+            core: { normativeConsciousness: "不明", personalBeliefs: [] },
+            foundation: { stability: 30, curiosity: 50 },
+            likability: 10,
+            wariness: 70
+        },
+        response: "わ、儂は…それに何と言えばいいか分からん。鍛冶場の火が消えてしまいそうだ。😵"
     });
   }
 };
@@ -252,16 +363,19 @@ const ThoughtProcessDisplay: React.FC<{ thoughtProcess: ThoughtProcess | null }>
         <label>ユーザー入力の分析</label>
         <p>{thoughtProcess.userInputAnalysis}</p>
       </div>
+      <div className="state-reasoning conflict-analysis">
+        <label>内部葛藤の分析 ⚔️</label>
+        <p><strong>{thoughtProcess.internalConflictAnalysis.conflictingLayers.join(' vs ')}</strong></p>
+        <p>{thoughtProcess.internalConflictAnalysis.description}</p>
+      </div>
       <div className="state-item">
          <label>パラメータ更新</label>
          <div className="parameter-updates-container">
             <ParameterUpdate label="好感度" change={thoughtProcess.parameterUpdates.likabilityChange} />
             <ParameterUpdate label="警戒心" change={thoughtProcess.parameterUpdates.warinessChange} />
+            <ParameterUpdate label="安定性" change={thoughtProcess.parameterUpdates.stabilityChange} />
+            <ParameterUpdate label="探索欲求" change={thoughtProcess.parameterUpdates.curiosityChange} />
          </div>
-      </div>
-      <div className="state-reasoning">
-        <label>状態変化の根拠</label>
-        <p>{thoughtProcess.newStateRationale}</p>
       </div>
     </div>
   );
@@ -280,22 +394,44 @@ const InternalStateDisplay: React.FC<{ internalState: InternalState | null }> = 
   return (
     <div className="internal-state-panel">
       <h3>NPCの内部状態</h3>
-      <div className="state-item">
-        <label>感情</label>
-        <p>{internalState.emotion}</p>
-      </div>
-      <div className="state-item">
-        <label>短期目標</label>
-        <p>{internalState.shortTermGoal}</p>
-      </div>
-      <div className="state-item">
-        <label>ユーザーへの印象</label>
-        <p>{internalState.impressionOfUser}</p>
+      
+      {/* 表層 */}
+      <div className="state-layer">
+        <h4>表層構造</h4>
+        <div className="state-item"><label>感情</label><p>{internalState.surface.emotion}</p></div>
+        <div className="state-item"><label>短期目標</label><p>{internalState.surface.shortTermGoal}</p></div>
+        <div className="state-item"><label>ユーザーへの印象</label><p>{internalState.surface.impressionOfUser}</p></div>
       </div>
       
-      <div className="numerical-parameters">
-        <ProgressBar label="好感度" value={internalState.likability} color="#4caf50" />
-        <ProgressBar label="警戒心" value={internalState.wariness} color="#f44336" />
+      {/* 上層 */}
+      <div className="state-layer">
+        <h4>上層構造</h4>
+        <div className="state-item"><label>長期的目標</label><p>{internalState.superstructure.longTermGoal}</p></div>
+        <div className="state-item"><label>物語（自己認識）</label><p>{internalState.superstructure.narrative}</p></div>
+      </div>
+
+      {/* 中核 */}
+      <div className="state-layer">
+        <h4>中核構造</h4>
+        <div className="state-item"><label>規範意識</label><p>{internalState.core.normativeConsciousness}</p></div>
+        <div className="state-item"><label>個人的信条</label><p>{internalState.core.personalBeliefs.join(' / ')}</p></div>
+      </div>
+
+      {/* 基層 */}
+      <div className="state-layer">
+          <h4>基層構造</h4>
+          <div className="numerical-parameters">
+            <ProgressBar label="安定性" value={internalState.foundation.stability} color="#1E90FF" />
+            <ProgressBar label="探索欲求" value={internalState.foundation.curiosity} color="#FFD700" />
+          </div>
+      </div>
+      
+      <div className="state-layer">
+          <h4>対人パラメータ</h4>
+          <div className="numerical-parameters">
+            <ProgressBar label="好感度" value={internalState.likability} color="#4caf50" />
+            <ProgressBar label="警戒心" value={internalState.wariness} color="#f44336" />
+          </div>
       </div>
     </div>
   );
@@ -321,7 +457,7 @@ const AddCharacterModal: React.FC<{ onAdd: (name: string, persona: string) => vo
           <label htmlFor="char-name">キャラクター名</label>
           <input id="char-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
           <label htmlFor="char-persona">ペルソナ</label>
-          <textarea id="char-persona" value={persona} onChange={(e) => setPersona(e.target.value)} required />
+          <textarea id="char-persona" value={persona} onChange={(e) => setPersona(e.target.value)} required placeholder="[上層構造]&#10;...&#10;[中核構造]&#10;...&#10;[基層構造]&#10;..."/>
           <div className="modal-actions">
             <button type="button" onClick={onClose}>キャンセル</button>
             <button type="submit">追加</button>
@@ -392,6 +528,8 @@ const App: React.FC = () => {
       
       npcResponseData.newState.likability = Math.max(0, Math.min(100, npcResponseData.newState.likability));
       npcResponseData.newState.wariness = Math.max(0, Math.min(100, npcResponseData.newState.wariness));
+      npcResponseData.newState.foundation.stability = Math.max(0, Math.min(100, npcResponseData.newState.foundation.stability));
+      npcResponseData.newState.foundation.curiosity = Math.max(0, Math.min(100, npcResponseData.newState.foundation.curiosity));
 
       const npcMessage: Message = { 
         sender: activeCharacter.id, 
@@ -433,13 +571,10 @@ const App: React.FC = () => {
     if(!char1 || !char2) return;
 
     setIsInteracting(true);
-    // Clear previous interaction messages for the selected pair
     const initialMessage: Message = { sender: 'user', text: `（${char1.name}と${char2.name}の対話が始まりました...)` };
     setCharacters(chars => chars.map(c => (c.id === char1Id || c.id === char2Id) ? {...c, messages: [initialMessage]} : c));
     
     let lastMessage = `${char2.name}が目の前に立っている。`;
-    let currentTurnChar = char1;
-    let nextTurnChar = char2;
     const maxTurns = 5;
 
     for (let i = 0; i < maxTurns * 2; i++) {
@@ -541,7 +676,7 @@ const App: React.FC = () => {
               </div>
               
               <h2>NPCペルソナ</h2>
-              <label htmlFor="persona-input">キャラクターの性格、背景、現在の状態を定義してください。</label>
+              <label htmlFor="persona-input">キャラクターの四層構造を定義してください。</label>
               <textarea
                 id="persona-input"
                 value={activeCharacter?.persona || ''}
@@ -575,7 +710,6 @@ const App: React.FC = () => {
             {messagesToShow.map((msg, index) => {
               const isUser = msg.sender === 'user';
               const isNPC1 = msg.sender === interactionState.char1Id;
-              const isNPC2 = msg.sender === interactionState.char2Id;
               
               const characterName = isUser ? "User" : getCharacterName(msg.sender as number);
               const messageClass = isUser ? 'user' : (isNPC1 ? 'npc-1' : 'npc-2');

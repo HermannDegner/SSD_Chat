@@ -9,6 +9,7 @@
   --npc-bubble-bg: #2c2c2e;
   --npc2-bubble-bg: #3a4a5a;
   --font-family: 'Inter', sans-serif;
+  --conflict-border-color: #e53935;
 }
 
 * {
@@ -60,7 +61,7 @@ header h1 {
 }
 
 .settings-panel {
-  width: 350px;
+  width: 400px; /* Increased width for more complex state */
   padding: 1.5rem;
   background-color: rgba(0,0,0,0.1);
   border-right: 1px solid var(--secondary-color);
@@ -161,7 +162,7 @@ header h1 {
 
 .settings-panel textarea {
   width: 100%;
-  height: 150px; /* Adjusted height */
+  height: 180px; /* Adjusted height */
   flex-shrink: 0;
   background-color: var(--secondary-color);
   border: 1px solid #4a4a4a;
@@ -361,8 +362,9 @@ header h1 {
 }
 
 .parameter-updates-container {
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
   background-color: var(--secondary-color);
   padding: 0.75rem;
   border-radius: 6px;
@@ -389,10 +391,22 @@ header h1 {
   border-top: 1px solid var(--secondary-color);
 }
 
-.internal-state-panel h3 {
-  font-size: 1.1rem;
+.internal-state-panel h3, .internal-state-panel h4 {
   color: var(--text-primary);
   margin-bottom: 1rem;
+}
+
+.internal-state-panel h3 { font-size: 1.1rem; }
+.internal-state-panel h4 { 
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--secondary-color);
+  padding-bottom: 0.5rem;
+  margin-top: 1.5rem;
+}
+.internal-state-panel .state-layer:first-of-type h4 {
+  margin-top: 0;
 }
 
 .internal-state-panel .state-placeholder {
@@ -410,7 +424,6 @@ header h1 {
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-secondary);
-  text-transform: uppercase;
   margin-bottom: 0.25rem;
 }
 
@@ -426,7 +439,7 @@ header h1 {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin: 1.25rem 0;
+  margin-top: 0.5rem;
 }
 
 .progress-bar-item .progress-bar-labels {
@@ -471,20 +484,23 @@ header h1 {
   border-radius: 4px;
 }
 
-.state-reasoning label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  margin-bottom: 0.4rem;
+.conflict-analysis {
+  border-left-color: var(--conflict-border-color);
+  background-color: rgba(229, 57, 53, 0.1);
 }
-
-.state-reasoning p {
+.conflict-analysis label {
+  color: var(--conflict-border-color);
+}
+.conflict-analysis p {
   font-size: 0.95rem;
-  color: var(--text-primary);
   line-height: 1.5;
 }
+.conflict-analysis p strong {
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
 
 /* --- Modal --- */
 .modal-overlay {
@@ -511,12 +527,12 @@ header h1 {
 
 /* Inspector Modal */
 .inspector-modal {
-    max-width: 700px;
+    max-width: 800px; /* Increased width */
 }
 .inspector-content {
     display: flex;
     gap: 1.5rem;
-    max-height: 60vh;
+    max-height: 70vh;
     overflow-y: auto;
 }
 .inspector-content > div {
