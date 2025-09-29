@@ -496,6 +496,7 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mode, setMode] = useState<AppMode>('chat');
   const [interactionState, setInteractionState] = useState<{char1Id: number, char2Id: number}>({char1Id: 1, char2Id: 2});
+  const [interactionContext, setInteractionContext] = useState<string>('');
   const [isInteracting, setIsInteracting] = useState(false);
   const [inspectedMessage, setInspectedMessage] = useState<Message | null>(null);
 
@@ -507,7 +508,7 @@ const App: React.FC = () => {
     if (chatWindowRef.current) {
       chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
     }
-  }, [activeCharacter?.messages, isLoading, characters]);
+  }, [activeCharacter?.messages, isLoading, characters, interactionState]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -571,24 +572,42 @@ const App: React.FC = () => {
     if(!char1 || !char2) return;
 
     setIsInteracting(true);
-    const initialMessage: Message = { sender: 'user', text: `（${char1.name}と${char2.name}の対話が始まりました...)` };
-    setCharacters(chars => chars.map(c => (c.id === char1Id || c.id === char2Id) ? {...c, messages: [initialMessage]} : c));
+
+    const contextMessageText = interactionContext.trim()
+      ? `（状況：${interactionContext.trim()}）`
+      : `（${char1.name}と${char2.name}の対話が始まりました...）`;
+
+    const initialSystemMessage: Message = { sender: 'user', text: contextMessageText };
+
+    // Use a local variable to manage the shared conversation history
+    let sharedMessages: Message[] = [initialSystemMessage];
+
+    // Reset the messages for the interacting characters for the UI
+    setCharacters(chars => chars.map(c => {
+        if (c.id === char1Id || c.id === char2Id) {
+            return {...c, messages: sharedMessages, internalState: null, thoughtProcess: null};
+        }
+        return c;
+    }));
     
-    let lastMessage = `${char2.name}が目の前に立っている。`;
+    let lastMessageForAI = `目の前には${char2.name}がいる。${interactionContext.trim() || '何を話そうか。'}`;
     const maxTurns = 5;
 
     for (let i = 0; i < maxTurns * 2; i++) {
-        const actingChar = (i % 2 === 0) ? char1 : char2;
-        const otherChar = (i % 2 === 0) ? char2 : char1;
+        const isChar1Turn = i % 2 === 0;
+        const actingChar = isChar1Turn ? char1 : char2;
 
         await new Promise(res => setTimeout(res, 1000));
 
-        const responseJson = await generateNpcResponse(actingChar.persona, actingChar.messages, lastMessage);
+        // Always pass the complete, shared history to the AI
+        const responseJson = await generateNpcResponse(actingChar.persona, sharedMessages, lastMessageForAI);
         
         try {
             const responseData: NpcResponseData = JSON.parse(responseJson);
             responseData.newState.likability = Math.max(0, Math.min(100, responseData.newState.likability));
             responseData.newState.wariness = Math.max(0, Math.min(100, responseData.newState.wariness));
+            responseData.newState.foundation.stability = Math.max(0, Math.min(100, responseData.newState.foundation.stability));
+            responseData.newState.foundation.curiosity = Math.max(0, Math.min(100, responseData.newState.foundation.curiosity));
             
             const newMessage: Message = {
                 sender: actingChar.id,
@@ -596,13 +615,19 @@ const App: React.FC = () => {
                 internalState: responseData.newState,
                 thoughtProcess: responseData.thoughtProcess,
             };
-            lastMessage = responseData.response;
+            
+            // Update the local shared history
+            sharedMessages.push(newMessage);
+            
+            // The next AI prompt is the response from the current one
+            lastMessageForAI = newMessage.text;
 
+            // Update React state for both characters with the new shared history
             setCharacters(chars => chars.map(c => {
-                if (c.id === actingChar.id || c.id === otherChar.id) {
+                if (c.id === char1Id || c.id === char2Id) {
                     return {
                         ...c,
-                        messages: [...c.messages, newMessage],
+                        messages: [...sharedMessages], // Use a new array to trigger re-render
                         internalState: c.id === actingChar.id ? responseData.newState : c.internalState,
                         thoughtProcess: c.id === actingChar.id ? responseData.thoughtProcess : c.thoughtProcess,
                     }
@@ -610,8 +635,19 @@ const App: React.FC = () => {
                 return c;
             }));
         } catch(e) {
-            console.error(e);
-            lastMessage = "（エラーが発生しました）";
+            console.error("Error during interaction turn:", e);
+            lastMessageForAI = "（エラーが発生し、思考が中断されました）";
+            const errorMessage: Message = { sender: actingChar.id, text: lastMessageForAI };
+            sharedMessages.push(errorMessage);
+            
+            setCharacters(chars => chars.map(c => {
+                if (c.id === char1Id || c.id === char2Id) {
+                    return { ...c, messages: [...sharedMessages] };
+                }
+                return c;
+            }));
+            
+            break; // Stop the interaction on error
         }
     }
     
@@ -699,6 +735,13 @@ const App: React.FC = () => {
                  <select className="character-select" value={interactionState.char2Id} onChange={(e) => setInteractionState(s => ({...s, char2Id: Number(e.target.value)}))}>
                     {characters.map(char => <option key={char.id} value={char.id}>{char.name}</option>)}
                 </select>
+                <label htmlFor="interaction-context">状況設定</label>
+                <textarea
+                  id="interaction-context"
+                  value={interactionContext}
+                  onChange={(e) => setInteractionContext(e.target.value)}
+                  placeholder="例：夕暮れの酒場。二人は初めて会う。テーブルの上には古い地図が広げられている。"
+                />
                 <button onClick={handleStartInteraction} disabled={isInteracting} className="interaction-button">
                   {isInteracting ? "対話を実行中..." : "相互作用を開始"}
                 </button>
